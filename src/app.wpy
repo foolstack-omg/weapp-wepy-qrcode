@@ -1,0 +1,100 @@
+<style lang="less">
+
+</style>
+
+<script>
+    import wepy from 'wepy'
+    import 'wepy-async-function'
+    import api from '@/utils/api'
+
+
+    export default class extends wepy.app {
+        config = {
+            pages: [
+                'pages/index'
+            ],
+            window: {
+                backgroundTextStyle: 'light',
+                navigationBarBackgroundColor: '#fff',
+                navigationBarTitleText: 'WeChat',
+                navigationBarTextStyle: 'black'
+            },
+            // tabBar: {
+            //     selected: 0,
+            //     backgroundColor: '#FFFFFF',
+            //     custom: true,
+            //     list: [{
+            //         pagePath: 'pages/index',
+            //         iconPath: 'images/xxx.png',
+            //         selectedIconPath: 'images/xxx.png',
+            //     }, {
+            //         pagePath: 'pages/index',
+            //         iconPath: 'images/xxx.png',
+            //         selectedIconPath: 'images/xxx.png',
+            //     }],
+            //     color: '#707070',
+            //     selectedColor: '#1AAD19'
+            // }
+        }
+
+        globalData = {
+            userInfo: null,
+            tabBar: this.config.tabBar
+        }
+
+        constructor() {
+            super()
+            this.use('requestfix')
+            this.use('promisify')
+        }
+
+        onLaunch() {
+            // 适配Tabbar
+            wx.getSystemInfo({
+                success: function (res) {
+                    // 判断SDK版本
+                    let sdkv = res.SDKVersion
+                    console.log('当前版本： ' + sdkv)
+                    let basicsVersion = [2, 5, 0]
+                    sdkv = sdkv.split('.')
+                    for (let i in sdkv) {
+                        if (parseInt(basicsVersion[i]) > parseInt(sdkv[i])) {
+                            console.warn('当前版本小于2.5.0')
+                            wx.hideTabBar()
+                        }
+                    }
+                }
+            })
+        }
+
+        // 获取当前登录用户信息
+        async getUserInfo() {
+            // 从缓存中获取用户信息
+            let user = wepy.getStorageSync('user')
+            // 如果用户未登录
+            if (!this.checkLogin() || !user) {
+                try {
+                    let response = await api.login()
+                    if(response === false) {
+                        return null;
+                    }
+                    user = wepy.getStorageSync('user')
+                } catch (err) {
+                    console.log(err)
+                    wepy.showModal({
+                        title: '提示',
+                        content: '服务器错误，请联系管理员:' + JSON.stringify(err)
+                    })
+                    return null
+                }
+            }
+            return user
+        }
+
+        // 用户是否已经登录
+        checkLogin() {
+            return (wepy.getStorageSync('access_token') !== '')
+        }
+
+    }
+</script>
